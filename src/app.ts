@@ -13,6 +13,7 @@ import { siteRouter } from "./modules/site/site.routes";
 import { taskRouter } from "./modules/task/task.routes";
 import { payPeriodConfigRouter } from "./modules/payPeriodConfig/payPeriodConfig.routes";
 import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar.routes";
+import { employeeSiteAssignmentRouter } from "./modules/employeeSiteAssignment/employeeSiteAssignment.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -69,6 +70,7 @@ export function createApp(): Express {
   v1.use(taskRouter);
   v1.use(payPeriodConfigRouter);
   v1.use(payrollCalendarRouter);
+  v1.use(employeeSiteAssignmentRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);
