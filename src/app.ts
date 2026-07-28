@@ -15,6 +15,7 @@ import { payPeriodConfigRouter } from "./modules/payPeriodConfig/payPeriodConfig
 import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar.routes";
 import { employeeSiteAssignmentRouter } from "./modules/employeeSiteAssignment/employeeSiteAssignment.routes";
 import { punchRouter } from "./modules/punch/punch.routes";
+import { scheduleRouter } from "./modules/schedule/schedule.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -73,6 +74,7 @@ export function createApp(): Express {
   v1.use(payPeriodConfigRouter);
   v1.use(payrollCalendarRouter);
   v1.use(employeeSiteAssignmentRouter);
+  v1.use(scheduleRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);
