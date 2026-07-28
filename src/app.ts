@@ -16,6 +16,8 @@ import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar
 import { employeeSiteAssignmentRouter } from "./modules/employeeSiteAssignment/employeeSiteAssignment.routes";
 import { punchRouter } from "./modules/punch/punch.routes";
 import { scheduleRouter } from "./modules/schedule/schedule.routes";
+import { timesheetProxyRouter } from "./modules/timesheetProxy/timesheetProxy.routes";
+import { processingProxyRouter } from "./modules/processingProxy/processingProxy.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -75,6 +77,8 @@ export function createApp(): Express {
   v1.use(payrollCalendarRouter);
   v1.use(employeeSiteAssignmentRouter);
   v1.use(scheduleRouter);
+  v1.use(timesheetProxyRouter);
+  v1.use(processingProxyRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);
