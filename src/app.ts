@@ -14,6 +14,7 @@ import { taskRouter } from "./modules/task/task.routes";
 import { payPeriodConfigRouter } from "./modules/payPeriodConfig/payPeriodConfig.routes";
 import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar.routes";
 import { employeeSiteAssignmentRouter } from "./modules/employeeSiteAssignment/employeeSiteAssignment.routes";
+import { punchRouter } from "./modules/punch/punch.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -58,12 +59,13 @@ export function createApp(): Express {
 
   const v1 = express.Router();
   v1.use(globalRateLimiter);
-  // ROUTER_MOUNT_MARKER — routers get mounted here as each module is built. punchRouter must be
-  // mounted FIRST once it exists: every router's `.use(authenticate)` runs unconditionally for ANY
-  // request reaching that router, regardless of whether one of its own routes ends up matching —
-  // a punch-ingest-key request (no Bearer header) would be rejected by the first router's strict
-  // auth check before ever reaching punchRouter's own, more permissive authenticatePunchIngestOrUser
-  // if any stricter-auth router ran first (same ordering hazard punch-processor's app.ts documents).
+  // punchRouter MUST be mounted first: every other router's `.use(authenticate)` runs
+  // unconditionally for ANY request reaching that router, regardless of whether one of its own
+  // routes ends up matching — a punch-ingest-key request (no Bearer header) would be rejected by
+  // the first router's strict auth check before ever reaching punchRouter's own, more permissive
+  // authenticatePunchIngestOrUser if any stricter-auth router ran first (same ordering hazard
+  // punch-processor's app.ts documents).
+  v1.use(punchRouter);
   v1.use(employeeRouter);
   v1.use(employeeGroupRouter);
   v1.use(siteRouter);
