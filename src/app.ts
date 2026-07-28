@@ -7,6 +7,12 @@ import mongoose from "mongoose";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { ruleRepoConnection } from "./config/db";
 import { punchProcessorClient } from "./clients/punchProcessorClient";
+import { employeeRouter } from "./modules/employee/employee.routes";
+import { employeeGroupRouter } from "./modules/employeeGroup/employeeGroup.routes";
+import { siteRouter } from "./modules/site/site.routes";
+import { taskRouter } from "./modules/task/task.routes";
+import { payPeriodConfigRouter } from "./modules/payPeriodConfig/payPeriodConfig.routes";
+import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -57,6 +63,12 @@ export function createApp(): Express {
   // a punch-ingest-key request (no Bearer header) would be rejected by the first router's strict
   // auth check before ever reaching punchRouter's own, more permissive authenticatePunchIngestOrUser
   // if any stricter-auth router ran first (same ordering hazard punch-processor's app.ts documents).
+  v1.use(employeeRouter);
+  v1.use(employeeGroupRouter);
+  v1.use(siteRouter);
+  v1.use(taskRouter);
+  v1.use(payPeriodConfigRouter);
+  v1.use(payrollCalendarRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);
