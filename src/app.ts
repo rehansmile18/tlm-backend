@@ -18,6 +18,7 @@ import { punchRouter } from "./modules/punch/punch.routes";
 import { scheduleRouter } from "./modules/schedule/schedule.routes";
 import { timesheetProxyRouter } from "./modules/timesheetProxy/timesheetProxy.routes";
 import { processingProxyRouter } from "./modules/processingProxy/processingProxy.routes";
+import { permissionsCatalogRouter } from "./modules/permissionsCatalog/permissionsCatalog.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -79,6 +80,7 @@ export function createApp(): Express {
   v1.use(scheduleRouter);
   v1.use(timesheetProxyRouter);
   v1.use(processingProxyRouter);
+  v1.use(permissionsCatalogRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);
