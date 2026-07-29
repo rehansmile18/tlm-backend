@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Types } from "mongoose";
 
 export const listTimesheetsQuerySchema = z.object({
   clientId: z.string().optional(),
@@ -11,7 +12,13 @@ export const listTimesheetsQuerySchema = z.object({
 });
 export type ListTimesheetsQuery = z.infer<typeof listTimesheetsQuerySchema>;
 
-export const timesheetIdParamSchema = z.object({ id: z.string() });
+// Unlike other modules' id params (which flow into a Mongoose query and get a clean CastError on
+// a malformed value for free), this id is interpolated directly into an outbound URL path to
+// punch-processor (see timesheetProxy.controller.ts's getTimesheet et al.) — so it's validated as
+// a real Mongo ObjectId here, up front, rather than trusting whatever string arrives in the path.
+export const timesheetIdParamSchema = z.object({
+  id: z.string().refine((value) => Types.ObjectId.isValid(value), "Invalid timesheet id"),
+});
 
 export const voidTimesheetSchema = z.object({ reason: z.string().min(1) });
 export type VoidTimesheetInput = z.infer<typeof voidTimesheetSchema>;

@@ -21,7 +21,9 @@ describe("Timesheet-proxy and processing-trigger-proxy modules", () => {
 
       setMockTimesheetByIdHandler((id) => ({ _id: id, clientId, status: "completed", totalHours: 40 }));
 
-      const res = await client.get("/api/v1/timesheets/abc123");
+      // A well-formed (but non-existent) ObjectId — the route validates the id's shape before
+      // this mock upstream is ever reached, so a placeholder like "abc123" would 400 first.
+      const res = await client.get(`/api/v1/timesheets/${newClientId()}`);
       expect(res.status).toBe(200);
       expect(res.body.totalHours).toBe(40);
     });
@@ -34,7 +36,7 @@ describe("Timesheet-proxy and processing-trigger-proxy modules", () => {
 
       setMockTimesheetByIdHandler((id) => ({ _id: id, clientId: otherClientId, status: "completed" }));
 
-      const res = await client.get("/api/v1/timesheets/abc123");
+      const res = await client.get(`/api/v1/timesheets/${newClientId()}`);
       expect(res.status).toBe(403);
     });
 
@@ -55,12 +57,13 @@ describe("Timesheet-proxy and processing-trigger-proxy modules", () => {
       setMockTimesheetByIdHandler((id) => ({ _id: id, clientId, status: "completed" }));
       setMockVoidTimesheetHandler((id, reason) => ({ _id: id, status: "voided", reason }));
 
-      const deniedForMissingPermission = await client.post("/api/v1/timesheets/abc123/void", { reason: "duplicate" });
+      const timesheetId = newClientId();
+      const deniedForMissingPermission = await client.post(`/api/v1/timesheets/${timesheetId}/void`, { reason: "duplicate" });
       expect(deniedForMissingPermission.status).toBe(403);
 
       const { token: voidToken } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["timesheet:read", "timesheet:void"] });
       const voider = authed(ctx.app, voidToken);
-      const voided = await voider.post("/api/v1/timesheets/abc123/void", { reason: "duplicate" });
+      const voided = await voider.post(`/api/v1/timesheets/${timesheetId}/void`, { reason: "duplicate" });
       expect(voided.status).toBe(200);
       expect(voided.body.status).toBe("voided");
     });

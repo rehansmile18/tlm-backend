@@ -5,6 +5,7 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { resolveCorsOrigins } from "./config/env";
 import { ruleRepoConnection } from "./config/db";
 import { punchProcessorClient } from "./clients/punchProcessorClient";
 import { employeeRouter } from "./modules/employee/employee.routes";
@@ -23,7 +24,9 @@ import { permissionsCatalogRouter } from "./modules/permissionsCatalog/permissio
 export function createApp(): Express {
   const app = express();
   app.use(helmet());
-  const corsOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean);
+  // resolveCorsOrigins() refuses to boot on an unset CORS_ORIGIN outside dev/test, so this can
+  // only be undefined (unrestricted, fine for local dev) locally.
+  const corsOrigins = resolveCorsOrigins();
   app.use(cors(corsOrigins && corsOrigins.length > 0 ? { origin: corsOrigins } : undefined));
   // Bulk punch/schedule submissions are the largest bodies this service accepts — default 100kb is
   // comfortably enough for a batch of a few hundred rows, but bumped modestly for headroom.
