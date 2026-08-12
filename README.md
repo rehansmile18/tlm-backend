@@ -58,11 +58,14 @@ Check it's up:
 curl http://localhost:4200/health
 ```
 
-### Getting a `PUNCH_PROCESSOR_SERVICE_JWT`
+### Setting up the punch-processor service account
 
 This service calls tlm-punch-processor's own API outbound (trigger processing, read/void
 timesheets) using a dedicated `PLATFORM_ADMIN` service-account user in TLM — not a human's login
-token. `npm run seed` automates this (see below); to do it by hand against a running TLM instance:
+token. Unlike a pre-minted JWT, this service logs into that account itself at runtime whenever its
+cached token is missing or near expiry (see `clients/punchProcessorClient.ts`), so there's nothing
+to periodically re-mint — just make sure the account exists and its credentials are in `.env`.
+`npm run seed` automates this (see below); to do it by hand against a running TLM instance:
 
 ```bash
 curl -X POST http://localhost:4000/api/v1/auth/login \
@@ -73,16 +76,8 @@ curl -X POST http://localhost:4000/api/v1/auth/login \
 curl -X POST http://localhost:4000/api/v1/users \
   -H "Authorization: Bearer <admin token>" -H "Content-Type: application/json" \
   -d '{"email":"svc-tlm-backend@internal","password":"<a real password>","role":"PLATFORM_ADMIN"}'
-
-curl -X POST http://localhost:4000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"svc-tlm-backend@internal","password":"<a real password>"}'
-# -> the returned token is the value for PUNCH_PROCESSOR_SERVICE_JWT
+# -> set PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL/PASSWORD in .env to this email/password
 ```
-
-TLM's tokens expire after `JWT_EXPIRES_IN` (TLM default: 12h) with no refresh mechanism — re-run
-`npm run seed` (or step 3 above) periodically to mint a fresh one, or set a longer `JWT_EXPIRES_IN`
-on the TLM side for this specific service account.
 
 ### Seeding
 
@@ -93,12 +88,13 @@ TLM_BOOTSTRAP_ADMIN_PASSWORD=<TLM SEED_ADMIN_PASSWORD> \
 npm run seed
 ```
 
-Creates (or logs into, if it already exists) the `PLATFORM_ADMIN` service-account user this
-service uses for its outbound punch-processor calls, and prints the resulting
-`PUNCH_PROCESSOR_SERVICE_JWT`. Optionally also seeds demo `CLIENT_ADMIN`/`SITE_MANAGER`/`VIEWER`
-users — with permissions drawn from `GET /permissions/catalog`'s recommended defaults — if
-`SEED_DEMO_CLIENT_ID` (and, for the `SITE_MANAGER`, `SEED_DEMO_SITE_ID`) point at an existing
-Client/Site already created in TLM/this service.
+Creates (or confirms, if it already exists) the `PLATFORM_ADMIN` service-account user this service
+uses for its outbound punch-processor calls, and prints the `PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL`/
+`PUNCH_PROCESSOR_SERVICE_ACCOUNT_PASSWORD` to set in `.env`. Optionally also seeds demo
+`CLIENT_ADMIN`/`SITE_MANAGER`/`VIEWER` users — with permissions drawn from
+`GET /permissions/catalog`'s recommended defaults — if `SEED_DEMO_CLIENT_ID` (and, for the
+`SITE_MANAGER`, `SEED_DEMO_SITE_ID`) point at an existing Client/Site already created in TLM/this
+service.
 
 ```bash
 npm test                    # vitest + mongodb-memory-server, no external database needed
@@ -119,7 +115,7 @@ and the API (bound to `127.0.0.1:4200`). By default it assumes TLM is reachable 
 if either lives elsewhere. It also assumes TLM's own MongoDB is reachable on the host at
 `host.docker.internal:27017` with TLM's own compose-default credentials — override
 `RULE_REPO_MONGODB_URI` otherwise. See the comments in `docker-compose.yml` for how to point
-everything at real instances and supply real `JWT_SECRET`/`PUNCH_PROCESSOR_SERVICE_JWT`/
+everything at real instances and supply real `JWT_SECRET`/`PUNCH_PROCESSOR_SERVICE_ACCOUNT_PASSWORD`/
 `PUNCH_INGEST_API_KEY` values — the app refuses to boot on placeholder secrets outside
 `NODE_ENV=development`/`test`, same as TLM and punch-processor.
 
@@ -134,7 +130,7 @@ See [`.env.example`](.env.example) for the full list with explanations. Notable 
 | `JWT_SECRET` | Must be the **same value** as TLM's `JWT_SECRET` — this service verifies the identical human-login JWTs TLM issues, it does not mint its own |
 | `RULE_REPO_BASE_URL` | Base URL of the TLM API this service calls for `GET /users/me` only (include `/api/v1`) |
 | `PUNCH_PROCESSOR_BASE_URL` | Base URL of the tlm-punch-processor API this service proxies processing/timesheet calls to (include `/api/v1`) |
-| `PUNCH_PROCESSOR_SERVICE_JWT` | Long-lived JWT for a `PLATFORM_ADMIN` service-account user seeded in TLM, used only for this service's own outbound calls to punch-processor |
+| `PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL` / `_PASSWORD` | Credentials for a `PLATFORM_ADMIN` service-account user seeded in TLM, used only for this service's own outbound calls to punch-processor — this service logs in fresh on demand, so these never expire the way a pre-minted JWT would |
 | `PUNCH_INGEST_API_KEY` | Shared secret for kiosk/upstream time-clock systems submitting punches — a separate auth path from human JWTs |
 | `USER_PROFILE_CACHE_MS` | How long a cached TLM `GET /users/me` lookup (role/clientId/siteIds/permissions/status) is trusted before re-checking |
 | `CORS_ORIGIN` | Comma-separated allowlist of browser origins; unset allows all |
@@ -220,7 +216,7 @@ All routes below are mounted under `/api/v1`, except `/health` which is at the r
 | `npm run typecheck` | Type-check `src/` and `tests/` with no emit |
 | `npm run lint` | ESLint over the project |
 | `npm test` | Run the automated test suite (`vitest` + ephemeral in-memory MongoDB — no external database needed) |
-| `npm run seed` | Bootstrap the `PUNCH_PROCESSOR_SERVICE_JWT` service account (and optionally demo users) — see "Seeding" above |
+| `npm run seed` | Bootstrap the punch-processor service account (and optionally demo users) — see "Seeding" above |
 
 ## Docker
 

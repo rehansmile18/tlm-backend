@@ -52,10 +52,14 @@ export const env = {
   // tlm-punch-processor's own API — the internal calculation engine this service calls to trigger
   // processing and to proxy Timesheet reads/void. Not reachable by end users directly.
   punchProcessorBaseUrl: process.env.PUNCH_PROCESSOR_BASE_URL ?? "http://localhost:4100/api/v1",
-  // A long-lived JWT for a PLATFORM_ADMIN service-account User seeded in TLM — used only for this
+  // Credentials for a PLATFORM_ADMIN service-account User seeded in TLM — used only for this
   // service's own outbound calls to punch-processor's processing/timesheet endpoints (a trusted
-  // service identity, separate from punch-processor's own RULE_REPO_SERVICE_JWT against TLM).
-  punchProcessorServiceJwt: resolveSecret("PUNCH_PROCESSOR_SERVICE_JWT", "dev-secret-change-me"),
+  // service identity, separate from punch-processor's own credentials against TLM). Stored as
+  // email/password rather than a pre-minted JWT: clients/punchProcessorClient.ts logs in fresh
+  // whenever its cached token is missing or near expiry, so this credential itself never expires
+  // the way a static JWT would (TLM's own JWT_EXPIRES_IN, 12h by default).
+  punchProcessorServiceAccountEmail: process.env.PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL ?? "svc-tlm-backend@internal",
+  punchProcessorServiceAccountPassword: resolveSecret("PUNCH_PROCESSOR_SERVICE_ACCOUNT_PASSWORD", "dev-secret-change-me"),
 
   // A single shared secret for kiosk/upstream time-clock systems submitting punches — deliberately
   // NOT a TLM user/JWT. Mirrors tlm-punch-processor's own PUNCH_INGEST_API_KEY (which is retired

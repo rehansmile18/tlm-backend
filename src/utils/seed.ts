@@ -4,9 +4,10 @@ import { UserRole } from "../types/domain";
 
 // Mirrors tlm-punch-processor's own seed.ts in spirit (idempotent, minimal, clear console output)
 // but this service needs TWO kinds of seeding: (1) the one credential it uses OUTBOUND, a
-// PLATFORM_ADMIN service-account User in TLM whose JWT becomes PUNCH_PROCESSOR_SERVICE_JWT, same
-// shape of problem punch-processor already solved for its own RULE_REPO_SERVICE_JWT; and (2),
-// optionally, demo human users (CLIENT_ADMIN/SITE_MANAGER/VIEWER) seeded with the catalog's
+// PLATFORM_ADMIN service-account User in TLM — this script just ensures the account EXISTS;
+// clients/punchProcessorClient.ts logs into it fresh on demand at runtime (via
+// PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL/PASSWORD), so there's no JWT to mint or re-mint here; and
+// (2), optionally, demo human users (CLIENT_ADMIN/SITE_MANAGER/VIEWER) seeded with the catalog's
 // recommended-default permissions, since TLM itself no longer computes any defaults.
 
 const SEED_EMAIL = process.env.SEED_SERVICE_ACCOUNT_EMAIL ?? "svc-tlm-backend@internal";
@@ -47,24 +48,21 @@ async function seedServiceAccount(bootstrapToken: () => Promise<string>): Promis
 
   const existingToken = await login(SEED_EMAIL, SEED_PASSWORD);
   if (existingToken) {
-    console.log(`Service-account user ${SEED_EMAIL} already exists in TLM — logged in, nothing to create.`);
-    printServiceToken(existingToken);
+    console.log(`Service-account user ${SEED_EMAIL} already exists in TLM — nothing to create.`);
+    printServiceAccountEnv();
     return;
   }
 
   const adminToken = await bootstrapToken();
   await createUser(adminToken, { email: SEED_EMAIL, password: SEED_PASSWORD, role: "PLATFORM_ADMIN" });
   console.log(`Created service-account user ${SEED_EMAIL} in TLM (role PLATFORM_ADMIN).`);
-
-  const freshToken = await login(SEED_EMAIL, SEED_PASSWORD);
-  if (!freshToken) throw new Error(`Created ${SEED_EMAIL} but could not log in as it immediately after.`);
-  printServiceToken(freshToken);
+  printServiceAccountEnv();
 }
 
-function printServiceToken(token: string): void {
-  console.log("\nPUNCH_PROCESSOR_SERVICE_JWT for this service's .env:\n");
-  console.log(token);
-  console.log("\nNote: this token expires per TLM's own JWT_EXPIRES_IN (default 12h) — re-run this script to mint a fresh one when it does.");
+function printServiceAccountEnv(): void {
+  console.log("\nSet these in this service's .env (this service logs in fresh on demand, so nothing here ever expires):\n");
+  console.log(`PUNCH_PROCESSOR_SERVICE_ACCOUNT_EMAIL=${SEED_EMAIL}`);
+  console.log(`PUNCH_PROCESSOR_SERVICE_ACCOUNT_PASSWORD=${SEED_PASSWORD}`);
 }
 
 /**

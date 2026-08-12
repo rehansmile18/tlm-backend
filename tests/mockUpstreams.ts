@@ -68,6 +68,13 @@ export function installMockUpstreamsFetch(): void {
     const url = new URL(typeof input === "string" ? input : input.toString());
     const method = init?.method ?? "GET";
 
+    // punchProcessorClient.ts logs its own service account into TLM on demand rather than using a
+    // pre-minted JWT — this stands in for that login call. The exact token value doesn't matter
+    // here since none of the other mocked endpoints below validate it, only /users/me does.
+    if (url.pathname.endsWith("/auth/login") && method === "POST") {
+      return jsonResponse({ token: "mock-punch-processor-service-token", user: { role: "PLATFORM_ADMIN", clientId: null } });
+    }
+
     if (url.pathname.endsWith("/users/me")) {
       const token = extractBearerToken(init);
       const profile = token ? profilesByToken.get(token) : undefined;
