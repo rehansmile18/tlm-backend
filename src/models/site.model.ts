@@ -1,5 +1,6 @@
 import { Schema, Types } from "mongoose";
 import { ruleRepoConnection } from "../config/db";
+import { Location, locationSchema } from "./location";
 
 export interface SiteDoc {
   _id: Types.ObjectId;
@@ -7,6 +8,8 @@ export interface SiteDoc {
   clientId: Types.ObjectId;
   name: string;
   timezone: string; // fallback when a punch omits its own timezone
+  location: Location | null;
+  customFields: Record<string, string> | null; // keyed by this client's SiteCustomFieldDefinition.name
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +20,8 @@ const siteSchema = new Schema<SiteDoc>(
     clientId: { type: Schema.Types.ObjectId, required: true },
     name: { type: String, required: true, trim: true },
     timezone: { type: String, required: true },
+    location: { type: locationSchema, default: null },
+    customFields: { type: Schema.Types.Mixed, default: null },
     createdAt: { type: Date, required: true, default: () => new Date() },
     updatedAt: { type: Date, required: true, default: () => new Date() },
   },

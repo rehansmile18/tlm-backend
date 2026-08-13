@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { Employee, EmployeeDoc } from "../../models/employee.model";
 import { EmployeeGroup } from "../../models/employeeGroup.model";
 import { PayPeriodConfig } from "../../models/payPeriodConfig.model";
+import { normalizeLocationInput } from "../../models/location";
 import { BadRequestError, NotFoundError } from "../../utils/errors";
 import { CreateEmployeeInput, UpdateEmployeeInput } from "./employee.validators";
 
@@ -64,6 +65,8 @@ export async function createEmployee(input: CreateEmployeeInput): Promise<Employ
     timezone: input.timezone,
     payPeriodConfigId: input.payPeriodConfigId ? new Types.ObjectId(input.payPeriodConfigId) : null,
     status: input.status ?? "active",
+    location: normalizeLocationInput(input.location),
+    customFields: input.customFields ?? null,
   });
   return doc;
 }
@@ -95,6 +98,8 @@ export async function updateEmployee(
     doc.payPeriodConfigId = input.payPeriodConfigId ? new Types.ObjectId(input.payPeriodConfigId) : null;
   }
   if (input.status !== undefined) doc.status = input.status;
+  if (input.location !== undefined) doc.location = normalizeLocationInput(input.location);
+  if (input.customFields !== undefined) doc.customFields = input.customFields;
 
   await doc.save();
   return doc;

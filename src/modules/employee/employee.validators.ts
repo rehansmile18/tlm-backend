@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+const locationSchema = z.object({
+  addressLine1: z.string().min(1).nullable().optional(),
+  addressLine2: z.string().min(1).nullable().optional(),
+  city: z.string().min(1).nullable().optional(),
+  state: z.string().min(1).nullable().optional(),
+  country: z.string().min(1).nullable().optional(),
+  postalCode: z.string().min(1).nullable().optional(),
+});
+
+const customFieldsSchema = z.record(z.string().min(1), z.string());
+
 export const createEmployeeSchema = z.object({
   clientId: z.string(),
   employeeId: z.string().min(1),
@@ -7,6 +18,8 @@ export const createEmployeeSchema = z.object({
   timezone: z.string().min(1),
   payPeriodConfigId: z.string().nullable().optional(),
   status: z.enum(["active", "inactive"]).optional(),
+  location: locationSchema.nullable().optional(),
+  customFields: customFieldsSchema.nullable().optional(),
 });
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
 
@@ -17,6 +30,8 @@ export const updateEmployeeSchema = z.object({
   timezone: z.string().min(1).optional(),
   payPeriodConfigId: z.string().nullable().optional(),
   status: z.enum(["active", "inactive"]).optional(),
+  location: locationSchema.nullable().optional(),
+  customFields: customFieldsSchema.nullable().optional(),
 });
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 

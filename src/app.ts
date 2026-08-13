@@ -11,6 +11,8 @@ import { punchProcessorClient } from "./clients/punchProcessorClient";
 import { employeeRouter } from "./modules/employee/employee.routes";
 import { employeeGroupRouter } from "./modules/employeeGroup/employeeGroup.routes";
 import { siteRouter } from "./modules/site/site.routes";
+import { siteCustomFieldDefinitionRouter } from "./modules/siteCustomFieldDefinition/siteCustomFieldDefinition.routes";
+import { employeeCustomFieldDefinitionRouter } from "./modules/employeeCustomFieldDefinition/employeeCustomFieldDefinition.routes";
 import { taskRouter } from "./modules/task/task.routes";
 import { payPeriodConfigRouter } from "./modules/payPeriodConfig/payPeriodConfig.routes";
 import { payrollCalendarRouter } from "./modules/payrollCalendar/payrollCalendar.routes";
@@ -76,6 +78,8 @@ export function createApp(): Express {
   v1.use(employeeRouter);
   v1.use(employeeGroupRouter);
   v1.use(siteRouter);
+  v1.use(siteCustomFieldDefinitionRouter);
+  v1.use(employeeCustomFieldDefinitionRouter);
   v1.use(taskRouter);
   v1.use(payPeriodConfigRouter);
   v1.use(payrollCalendarRouter);

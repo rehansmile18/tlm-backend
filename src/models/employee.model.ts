@@ -1,5 +1,6 @@
 import { Schema, Types } from "mongoose";
 import { ruleRepoConnection } from "../config/db";
+import { Location, locationSchema } from "./location";
 
 export interface EmployeeDoc {
   _id: Types.ObjectId;
@@ -9,6 +10,8 @@ export interface EmployeeDoc {
   timezone: string; // IANA tz, e.g. "America/Los_Angeles"
   payPeriodConfigId: Types.ObjectId | null; // falls back to the employeeGroup's config when null
   status: "active" | "inactive";
+  location: Location | null;
+  customFields: Record<string, string> | null; // keyed by this client's EmployeeCustomFieldDefinition.name
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +24,8 @@ const employeeSchema = new Schema<EmployeeDoc>(
     timezone: { type: String, required: true },
     payPeriodConfigId: { type: Schema.Types.ObjectId, ref: "PayPeriodConfig", default: null },
     status: { type: String, enum: ["active", "inactive"], required: true, default: "active" },
+    location: { type: locationSchema, default: null },
+    customFields: { type: Schema.Types.Mixed, default: null },
     createdAt: { type: Date, required: true, default: () => new Date() },
     updatedAt: { type: Date, required: true, default: () => new Date() },
   },

@@ -67,6 +67,32 @@ describe("master data modules", () => {
       const ownGetOtherEmployee = await own.get(`/api/v1/employees/${created.body._id}`);
       expect(ownGetOtherEmployee.status).toBe(404);
     });
+
+    it("stores and updates an employee's location and custom fields", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["employee:read", "employee:write"] });
+      const client = authed(ctx.app, token);
+
+      const created = await client.post("/api/v1/employees", {
+        clientId,
+        employeeId: "E-1",
+        timezone: "UTC",
+        location: { city: "Austin", state: "TX", country: "US", postalCode: "78701" },
+        customFields: { badgeNumber: "12345" },
+      });
+      expect(created.status).toBe(201);
+      expect(created.body.location).toMatchObject({ city: "Austin", state: "TX", country: "US", postalCode: "78701" });
+      expect(created.body.customFields).toEqual({ badgeNumber: "12345" });
+
+      const updated = await client.patch(`/api/v1/employees/${created.body._id}`, {
+        location: { city: "Dallas" },
+        customFields: { badgeNumber: "99999", unionLocal: "42" },
+      });
+      expect(updated.status).toBe(200);
+      expect(updated.body.location.city).toBe("Dallas");
+      expect(updated.body.location.state).toBeNull(); // update REPLACES the whole location object
+      expect(updated.body.customFields).toEqual({ badgeNumber: "99999", unionLocal: "42" });
+    });
   });
 
   describe("PayPeriodConfig + EmployeeGroup + Site + Task + PayrollCalendar (smoke)", () => {
@@ -101,6 +127,33 @@ describe("master data modules", () => {
       expect(task.status).toBe(403); // missing task:write
     });
 
+    it("stores and updates a site's location and custom fields", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["site:read", "site:write"] });
+      const client = authed(ctx.app, token);
+
+      const created = await client.post("/api/v1/sites", {
+        clientId,
+        siteId: "S-1",
+        name: "Main St",
+        timezone: "UTC",
+        location: { addressLine1: "123 Main St", city: "Austin", state: "TX", country: "US", postalCode: "78701" },
+        customFields: { region: "South" },
+      });
+      expect(created.status).toBe(201);
+      expect(created.body.location).toMatchObject({ addressLine1: "123 Main St", city: "Austin" });
+      expect(created.body.customFields).toEqual({ region: "South" });
+
+      const updated = await client.patch(`/api/v1/sites/${created.body._id}`, {
+        location: { city: "Dallas" },
+        customFields: { region: "North" },
+      });
+      expect(updated.status).toBe(200);
+      expect(updated.body.location.city).toBe("Dallas");
+      expect(updated.body.location.addressLine1).toBeNull(); // update REPLACES the whole location object
+      expect(updated.body.customFields).toEqual({ region: "North" });
+    });
+
     it("creates a PayrollCalendar", async () => {
       const clientId = newClientId();
       const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["payrollCalendar:read", "payrollCalendar:write"] });
@@ -113,6 +166,68 @@ describe("master data modules", () => {
       });
       expect(calendar.status).toBe(201);
       expect(calendar.body.rows).toHaveLength(1);
+    });
+  });
+
+  describe("SiteCustomFieldDefinition", () => {
+    it("creates and lists custom field definitions for a client", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["site:read", "site:write"] });
+      const client = authed(ctx.app, token);
+
+      const created = await client.post("/api/v1/site-custom-fields", { clientId, name: "Region" });
+      expect(created.status).toBe(201);
+      expect(created.body.name).toBe("Region");
+
+      const list = await client.get("/api/v1/site-custom-fields");
+      expect(list.status).toBe(200);
+      expect(list.body.items).toHaveLength(1);
+      expect(list.body.items[0].name).toBe("Region");
+    });
+
+    it("rejects creating a definition for a user missing site:write (permission-denied)", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["site:read"] });
+      const client = authed(ctx.app, token);
+
+      const res = await client.post("/api/v1/site-custom-fields", { clientId, name: "Region" });
+      expect(res.status).toBe(403);
+    });
+
+    it("rejects creating a definition for another client (scope-denied)", async () => {
+      const ownClientId = newClientId();
+      const otherClientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId: ownClientId, permissions: ["site:read", "site:write"] });
+      const client = authed(ctx.app, token);
+
+      const res = await client.post("/api/v1/site-custom-fields", { clientId: otherClientId, name: "Region" });
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("EmployeeCustomFieldDefinition", () => {
+    it("creates and lists custom field definitions for a client", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["employee:read", "employee:write"] });
+      const client = authed(ctx.app, token);
+
+      const created = await client.post("/api/v1/employee-custom-fields", { clientId, name: "Badge Number" });
+      expect(created.status).toBe(201);
+      expect(created.body.name).toBe("Badge Number");
+
+      const list = await client.get("/api/v1/employee-custom-fields");
+      expect(list.status).toBe(200);
+      expect(list.body.items).toHaveLength(1);
+      expect(list.body.items[0].name).toBe("Badge Number");
+    });
+
+    it("rejects creating a definition for a user missing employee:write (permission-denied)", async () => {
+      const clientId = newClientId();
+      const { token } = seedAuthedUser({ role: "CLIENT_ADMIN", clientId, permissions: ["employee:read"] });
+      const client = authed(ctx.app, token);
+
+      const res = await client.post("/api/v1/employee-custom-fields", { clientId, name: "Badge Number" });
+      expect(res.status).toBe(403);
     });
   });
 });

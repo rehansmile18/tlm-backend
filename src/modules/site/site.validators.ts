@@ -1,10 +1,23 @@
 import { z } from "zod";
 
+const locationSchema = z.object({
+  addressLine1: z.string().min(1).nullable().optional(),
+  addressLine2: z.string().min(1).nullable().optional(),
+  city: z.string().min(1).nullable().optional(),
+  state: z.string().min(1).nullable().optional(),
+  country: z.string().min(1).nullable().optional(),
+  postalCode: z.string().min(1).nullable().optional(),
+});
+
+const customFieldsSchema = z.record(z.string().min(1), z.string());
+
 export const createSiteSchema = z.object({
   clientId: z.string(),
   siteId: z.string().min(1),
   name: z.string().min(1),
   timezone: z.string().min(1),
+  location: locationSchema.nullable().optional(),
+  customFields: customFieldsSchema.nullable().optional(),
 });
 export type CreateSiteInput = z.infer<typeof createSiteSchema>;
 
@@ -14,6 +27,8 @@ export const updateSiteSchema = z.object({
   siteId: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
   timezone: z.string().min(1).optional(),
+  location: locationSchema.nullable().optional(),
+  customFields: customFieldsSchema.nullable().optional(),
 });
 export type UpdateSiteInput = z.infer<typeof updateSiteSchema>;
 
