@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../../middleware/errorHandler";
 import { getReadClientFilter, assertSameSite } from "../../middleware/tenantScope";
 import * as employeeSiteAssignmentService from "./employeeSiteAssignment.service";
-import { CreateEmployeeSiteAssignmentInput } from "./employeeSiteAssignment.validators";
+import { CreateEmployeeSiteAssignmentInput, UpdateEmployeeSiteAssignmentInput } from "./employeeSiteAssignment.validators";
 
 export const listEmployeeSitesHandler = asyncHandler(async (req: Request, res: Response) => {
   const items = await employeeSiteAssignmentService.listSitesForEmployee(req.params.id, getReadClientFilter(req));
@@ -17,6 +17,14 @@ export const assignEmployeeSiteHandler = asyncHandler(async (req: Request, res: 
   assertSameSite(req, String(employee.clientId), input.siteId);
   const doc = await employeeSiteAssignmentService.assignEmployeeToSite(employee, input);
   res.status(201).json(doc);
+});
+
+export const updateEmployeeSiteAssignmentHandler = asyncHandler(async (req: Request, res: Response) => {
+  const input = req.body as UpdateEmployeeSiteAssignmentInput;
+  const employee = await employeeSiteAssignmentService.getEmployeeInScope(req.params.id, getReadClientFilter(req));
+  assertSameSite(req, String(employee.clientId), req.params.siteId);
+  const doc = await employeeSiteAssignmentService.updateEmployeeSiteAssignment(employee, req.params.siteId, input);
+  res.json(doc);
 });
 
 export const unassignEmployeeSiteHandler = asyncHandler(async (req: Request, res: Response) => {

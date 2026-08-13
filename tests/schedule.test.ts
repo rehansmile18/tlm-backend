@@ -16,6 +16,7 @@ describe("Schedule module", () => {
         "employee:read",
         "employee:write",
         "site:write",
+        "task:write",
         "employeeSiteAssignment:read",
         "employeeSiteAssignment:write",
         "schedule:read",
@@ -27,6 +28,7 @@ describe("Schedule module", () => {
     const admin = authed(ctx.app, adminToken);
     await admin.post("/api/v1/employees", { clientId, employeeId: "EMP-1", timezone: "America/New_York" });
     await admin.post("/api/v1/sites", { clientId, siteId: "SITE-1", name: "Site", timezone: "America/New_York" });
+    await admin.post("/api/v1/tasks", { clientId, name: "Cashier" });
   });
 
   afterEach(async () => {
@@ -36,7 +38,7 @@ describe("Schedule module", () => {
   async function assignEmployeeToSite(admin: ReturnType<typeof authed>) {
     const employees = await admin.get("/api/v1/employees");
     const employeeMongoId = employees.body.items[0]._id;
-    await admin.post(`/api/v1/employees/${employeeMongoId}/sites`, { siteId: "SITE-1" });
+    await admin.post(`/api/v1/employees/${employeeMongoId}/sites`, { siteId: "SITE-1", task: "Cashier" });
   }
 
   it("rejects a shift for an employee/site pair with no active EmployeeSiteAssignment", async () => {
