@@ -2,16 +2,40 @@ import { Router } from "express";
 import { authenticate } from "../../middleware/auth";
 import { requirePermission } from "../../middleware/permissions";
 import { validateRequest } from "../../middleware/validateRequest";
-import { listTimesheetsQuerySchema, timesheetIdParamSchema, voidTimesheetSchema } from "./timesheetProxy.validators";
+import {
+  listTimesheetsQuerySchema,
+  timesheetIdParamSchema,
+  voidTimesheetSchema,
+  listTimesheetSiteGroupsQuerySchema,
+  timesheetGridParamSchema,
+  timesheetGridQuerySchema,
+} from "./timesheetProxy.validators";
 import {
   listTimesheetsHandler,
   getTimesheetHandler,
   getTimesheetAuditTrailHandler,
   voidTimesheetHandler,
+  listTimesheetSiteGroupsHandler,
+  getTimesheetGridHandler,
 } from "./timesheetProxy.controller";
 
 export const timesheetProxyRouter = Router();
 timesheetProxyRouter.use(authenticate);
+
+// Registered before /timesheets/:id — otherwise Express's param route would greedily match
+// "by-site" as an :id.
+timesheetProxyRouter.get(
+  "/timesheets/by-site",
+  requirePermission("timesheet:read"),
+  validateRequest({ query: listTimesheetSiteGroupsQuerySchema }),
+  listTimesheetSiteGroupsHandler
+);
+timesheetProxyRouter.get(
+  "/timesheets/by-site/:siteId/:payPeriodId",
+  requirePermission("timesheet:read"),
+  validateRequest({ params: timesheetGridParamSchema, query: timesheetGridQuerySchema }),
+  getTimesheetGridHandler
+);
 
 timesheetProxyRouter.get(
   "/timesheets",

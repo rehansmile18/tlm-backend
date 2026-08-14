@@ -69,6 +69,21 @@ export interface ListTimesheetsParams {
   pageSize?: number;
 }
 
+export interface ListTimesheetSiteGroupsParams {
+  clientId?: string;
+  siteId?: string;
+  siteIds?: string[];
+  payPeriodId?: string;
+  includeSuperseded?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetTimesheetGridParams {
+  clientId?: string;
+  includeSuperseded?: boolean;
+}
+
 /**
  * Thin HTTP client for this service's internal engine dependency: tlm-punch-processor.
  * Authenticates every call with a dedicated PLATFORM_ADMIN service-account identity (see
@@ -150,6 +165,27 @@ export const punchProcessorClient = {
         includeSuperseded: params.includeSuperseded !== undefined ? String(params.includeSuperseded) : undefined,
         page: params.page !== undefined ? String(params.page) : undefined,
         pageSize: params.pageSize !== undefined ? String(params.pageSize) : undefined,
+      },
+    }),
+
+  listTimesheetSiteGroups: (params: ListTimesheetSiteGroupsParams): Promise<unknown> =>
+    callPunchProcessor("/timesheets/by-site", {
+      query: {
+        clientId: params.clientId,
+        siteId: params.siteId,
+        siteIds: params.siteIds?.length ? params.siteIds.join(",") : undefined,
+        payPeriodId: params.payPeriodId,
+        includeSuperseded: params.includeSuperseded !== undefined ? String(params.includeSuperseded) : undefined,
+        page: params.page !== undefined ? String(params.page) : undefined,
+        pageSize: params.pageSize !== undefined ? String(params.pageSize) : undefined,
+      },
+    }),
+
+  getTimesheetGrid: (siteId: string, payPeriodId: string, params: GetTimesheetGridParams): Promise<unknown> =>
+    callPunchProcessor(`/timesheets/by-site/${encodeURIComponent(siteId)}/${encodeURIComponent(payPeriodId)}`, {
+      query: {
+        clientId: params.clientId,
+        includeSuperseded: params.includeSuperseded !== undefined ? String(params.includeSuperseded) : undefined,
       },
     }),
 

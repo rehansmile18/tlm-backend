@@ -18,6 +18,8 @@ let timesheetsHandler: TimesheetHandler | null = null;
 let timesheetByIdHandler: ((id: string) => unknown) | null = null;
 let processingRunHandler: ((body: unknown) => unknown) | null = null;
 let voidTimesheetHandler: ((id: string, reason: string) => unknown) | null = null;
+let timesheetSiteGroupsHandler: ((query: URLSearchParams) => unknown) | null = null;
+let timesheetGridHandler: ((siteId: string, payPeriodId: string, query: URLSearchParams) => unknown) | null = null;
 
 export function registerMockProfile(token: string, profile: MockProfile): void {
   profilesByToken.set(token, profile);
@@ -39,12 +41,24 @@ export function setMockVoidTimesheetHandler(handler: ((id: string, reason: strin
   voidTimesheetHandler = handler;
 }
 
+export function setMockTimesheetSiteGroupsHandler(handler: ((query: URLSearchParams) => unknown) | null): void {
+  timesheetSiteGroupsHandler = handler;
+}
+
+export function setMockTimesheetGridHandler(
+  handler: ((siteId: string, payPeriodId: string, query: URLSearchParams) => unknown) | null
+): void {
+  timesheetGridHandler = handler;
+}
+
 export function resetMockUpstreams(): void {
   profilesByToken.clear();
   timesheetsHandler = null;
   timesheetByIdHandler = null;
   processingRunHandler = null;
   voidTimesheetHandler = null;
+  timesheetSiteGroupsHandler = null;
+  timesheetGridHandler = null;
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -90,6 +104,25 @@ export function installMockUpstreamsFetch(): void {
 
     if (url.pathname.endsWith("/health")) {
       return jsonResponse({ status: "ok" });
+    }
+
+    // Checked before the generic byId/void patterns below — otherwise "by-site" would itself get
+    // matched as a timesheet id.
+    const timesheetGridMatch = url.pathname.match(/\/timesheets\/by-site\/([^/]+)\/([^/]+)$/);
+    if (timesheetGridMatch) {
+      if (!timesheetGridHandler) return jsonResponse({ error: "NotFoundError" }, 404);
+      const result = timesheetGridHandler(
+        decodeURIComponent(timesheetGridMatch[1]),
+        decodeURIComponent(timesheetGridMatch[2]),
+        url.searchParams
+      );
+      if (!result) return jsonResponse({ error: "NotFoundError" }, 404);
+      return jsonResponse(result);
+    }
+
+    if (url.pathname.endsWith("/timesheets/by-site")) {
+      if (!timesheetSiteGroupsHandler) return jsonResponse({ items: [], total: 0, page: 1, pageSize: 50 });
+      return jsonResponse(timesheetSiteGroupsHandler(url.searchParams));
     }
 
     const timesheetVoidMatch = url.pathname.match(/\/timesheets\/([^/]+)\/void$/);
